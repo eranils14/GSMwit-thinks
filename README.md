@@ -1327,3 +1327,60 @@ void SIM900power()
   delay(5000);
 }
 
+
+
+
+
+______________________________________________________________________________________
+
+AWS commond 
+__________
+
+
+Import certs
+>AT+USECMNG=0,0,"ROOT_CERT",1706
+>[Send cert string, length 1706]
++USECMNG: 0,0,"ROOT_CERT","cb17e4..."
+OK
+
+>AT+USECMNG=0,1,"CLIENT_CERT",1206
+>[Send cert string, length 1206]
++USECMNG: 0,1,"CLIENT_CERT","081dd1..."
+OK
+
+>AT+USECMNG=0,2,"PRIVATE_KEY",1654
+>[Send cert string, length 1654]
++USECMNG: 0,2,"PRIVATE_KEY","bcb22b..."
+OK
+
+Profile 1, cert validation level 1
+AT+USECPRF=1,0,1
+OK
+
+Profile 1, server can use any version for the connection
+AT+USECPRF=1,1,0
+OK
+
+Profile 1, use named root cert
+AT+USECPRF=1,3,"ROOT_CERT"
+OK
+
+Profile 1, use named client cert
+AT+USECPRF=1,5,"CLIENT_CERT"
+OK
+
+Profile 1, use named private key
+AT+USECPRF=1,6,"PRIVATE_KEY"
+OK
+
+Create TCP socket
+AT+USOCR=6
++USOCR: 0
+OK
+
+Previous returned socket 0, using SSL/TLS, apply profile 1
+AT+USOSEC=0,1,1
+OK
+
+
+
