@@ -1,3 +1,475 @@
+_________________________________________________________
+
+PUB SUB ULTRA WITH LED
+
+
+#include <AWS_IOT.h>
+#include <WiFi.h>
+
+AWS_IOT hornbill;
+
+const int trigPin = 35;
+const int echoPin = 34;
+// defines variables
+long duration;
+int distance;
+
+char WIFI_SSID[]="Inwizards Inc";
+char WIFI_PASSWORD[]="TE19ch00";
+char HOST_ADDRESS[]="a2evsoqgilvlbt-ats.iot.ap-south-1.amazonaws.com";
+char CLIENT_ID[]= "302806144930";
+char TOPIC_NAME[]= "$aws/things/Test/shadow/update";
+
+int status = WL_IDLE_STATUS;
+int tick=0,msgCount=0,msgReceived = 0;
+char payload[512];
+char rcvdPayload[512];
+
+String Serialreadvelue =" ";// these are the starting values to print
+
+void mySubCallBackHandler (char *topicName, int payloadLen, char *payLoad)
+{
+    strncpy(rcvdPayload,payLoad,payloadLen);
+    rcvdPayload[payloadLen] = 0;
+    msgReceived = 1;
+}
+
+const int output26 = 26;
+const int output27 = 27;
+
+void setup() {
+    Serial.begin(115200);
+    delay(1000);
+    while (status != WL_CONNECTED)
+    {
+        Serial.print("Attempting to connect to SSID: ");
+        Serial.println(WIFI_SSID);
+        // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+        status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+        // wait 5 seconds for connection:
+        delay(5000);
+    }
+
+    Serial.println("Connected to wifi");
+    if(hornbill.connect(HOST_ADDRESS,CLIENT_ID)== 0)
+    {
+        Serial.println("Connected to AWS");
+        delay(1000);
+
+        if(0==hornbill.subscribe(TOPIC_NAME,mySubCallBackHandler))
+        {
+            Serial.println("Subscribe Successfull");
+        }
+        else
+        {
+            Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
+            while(1);
+        }
+    }
+    else
+    {
+        Serial.println("AWS connection failed, Check the HOST Address");
+        while(1);
+        delay(1000);
+    }
+
+  
+  pinMode(output26, OUTPUT);
+  pinMode(output27, OUTPUT);
+  digitalWrite(output26, LOW);
+  digitalWrite(output27, LOW);
+
+  pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+  pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+
+}
+void loop() {
+// Clears the trigPin
+digitalWrite(trigPin, LOW);
+delayMicroseconds(2);
+// Sets the trigPin on HIGH state for 10 micro seconds
+digitalWrite(trigPin, HIGH);
+delay(1000);
+digitalWrite(trigPin, LOW);
+// Reads the echoPin, returns the sound wave travel time in microseconds
+duration = pulseIn(echoPin, HIGH);
+// Calculating the distance
+distance= duration*0.034/2;
+// Prints the distance on the Serial Monitor
+Serial.print("Distance CM:  ");
+Serial.println(distance);
+
+
+if (distance > 40) {
+    digitalWrite(output26, HIGH);
+  } else {
+    digitalWrite(output26, LOW);
+  }
+
+  if (distance < 41) {
+    digitalWrite(output27, HIGH);
+  } else {
+    digitalWrite(output27, LOW);
+  }
+
+
+
+    if(msgReceived == 1){
+      
+       msgReceived = 0;
+        Serial.print("");
+        Serial.println(rcvdPayload);
+
+
+
+Serialreadvelue = rcvdPayload;
+
+Serial.println("");
+Serial.println(Serialreadvelue);
+
+
+if (Serialreadvelue == "0000") {
+digitalWrite(output26, HIGH);
+digitalWrite(output27, LOW);
+Serial.println("S-26 ON");
+}
+if (Serialreadvelue == "0001") {
+digitalWrite(output26, LOW);
+digitalWrite(output27, HIGH);
+Serial.println(" S-27 ON");
+}
+if (Serialreadvelue == "0010") {
+digitalWrite(output26, HIGH);
+digitalWrite(output27, HIGH);
+Serial.println("S-26,27  ON");
+delay(1000);
+digitalWrite(output26, LOW);
+digitalWrite(output27, LOW);
+delay(1000);
+
+}
+if (Serialreadvelue == "0011") {
+digitalWrite(output26, LOW);
+digitalWrite(output27, LOW);
+Serial.println("S-26,27 OFF");
+delay(1000);
+
+}
+
+   if(tick >= 5)   // publish to topic every 5seconds
+    {
+        tick=0;
+        
+        sprintf(payload,"Hello Inwizards Inc ESP32 : %d",msgCount++);
+        if(hornbill.publish(TOPIC_NAME,payload) == 0)
+        {        
+            Serial.print("Publish Message:");
+            Serial.println(payload);
+        }
+        else
+        {
+            Serial.println("Publish failed");
+        }
+    }  
+    vTaskDelay(3000 / portTICK_RATE_MS); 
+    tick++;
+    }
+}
+
+
+
+
+_________________________________________________________
+PUB SUB SUB WITH LED FINAL
+
+
+#include <AWS_IOT.h>
+#include <WiFi.h>
+
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+#include "time.h"
+
+AWS_IOT hornbill;   // AWS_IOT instance
+char WIFI_SSID[]="Inwizards Inc";
+char WIFI_PASSWORD[]="TE19ch00";
+char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
+char CLIENT_ID[]= "707581501534";
+char TOPIC_NAME[]= "$aws/things/Iotbattery/shadow/update/accepted";
+
+
+
+
+int output26 = 26;
+int output27 = 27;
+int status = WL_IDLE_STATUS;
+int tick=0,msgCount=0,msgReceived = 0;
+char payload[512];
+char rcvdPayload[512];
+String Serialreadvelue =" ";// these are the starting values to print
+void mySubCallBackHandler (char *topicName, int payloadLen, char *payLoad)
+{
+    strncpy(rcvdPayload,payLoad,payloadLen);
+    rcvdPayload[payloadLen] = 0;
+    msgReceived = 1;
+}
+
+
+
+
+static const int RXPin = 15, TXPin = 4;
+static const uint32_t GPSBaud = 9600;
+
+// The TinyGPS++ object
+TinyGPSPlus gps;
+
+// The serial connection to the GPS device
+SoftwareSerial ss(RXPin, TXPin);
+
+
+const char* ntpServer = "de.pool.ntp.org";
+const long  gmtOffset_sec = 19800;
+const int   daylightOffset_sec = 19800;
+int second;
+int minute;
+int hour;
+int day;
+int month;
+int year;
+int weekday;
+long current;
+struct tm timeinfo;
+void printLocalTime()
+{
+if(!getLocalTime(&timeinfo)){
+Serial.println("Failed to obtain time");
+return;
+}
+  //Serial.println(&timeinfo, "%A, %d %B %Y %H:%M:%S");
+}
+
+const int  voltageSensor  = 35;
+float vOUT = 0.0;
+float vIN  = 0.0;
+float  R1  = 100000; // R1 is of used in "ohm" intranal rsistance value
+float R2   = 6900.0;  // used intranal rsistance value
+int value  = 0;
+  
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#define ONE_WIRE_BUS 2 // with the arduino pin number it is connected to
+                          // with the arduino pin number it is connected to
+                          
+const int currentPin = 34;
+int sensitivity = 66;
+int adcValue= 0;
+int offsetVoltage = 2500;
+double adcVoltage = 0;
+double currentValue = 0;
+
+
+double lat = 0;
+double lng = 0;
+
+    
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+float Celcius=0;
+float Fahrenheit=0;
+//int status = WL_IDLE_STATUS;
+//int tick=0,msgCount=0,msgReceived = 0;
+//char payload[512];
+//char rcvdPayload[512];
+
+void setup(){
+
+
+  //Serial.begin(115200);
+  //delay(2000);
+
+  pinMode(output26, OUTPUT);
+  pinMode(output27, OUTPUT);
+
+  digitalWrite(output26, LOW);
+  digitalWrite(output27, LOW);
+
+
+
+  Serial.begin(9600);
+  ss.begin(GPSBaud);
+
+Serial.begin(115200);
+delay(2000);
+
+while (status != WL_CONNECTED)
+    {
+        Serial.print("Attempting to connect to SSID: ");
+        Serial.println(WIFI_SSID);
+        // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+        status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+        // wait 5 seconds for connection:
+        delay(5000);
+    }
+
+    Serial.println("Connected to wifi");
+
+    if(hornbill.connect(HOST_ADDRESS,CLIENT_ID)== 0)
+    {
+        Serial.println("Connected to AWS");
+        delay(1000);
+
+        if(0==hornbill.subscribe(TOPIC_NAME,mySubCallBackHandler))
+        {
+            Serial.println("Subscribe Successfull");
+        }
+        else
+        {
+            Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
+            while(1);
+        }
+         
+    }
+    else
+    {
+        Serial.println("AWS connection failed, Check the HOST Address");
+        while(1);
+    }
+
+    delay(5000);
+
+      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+      printLocalTime();
+
+sensors.begin();
+}
+
+       
+void loop(){
+
+printLocalTime();
+  second = timeinfo.tm_sec;
+  minute = timeinfo.tm_min;
+  hour = timeinfo.tm_hour;
+  day = timeinfo.tm_mday;
+  month = timeinfo.tm_mon + 1;
+  year = timeinfo.tm_year + 1900;
+  weekday = timeinfo.tm_wday +1;
+  Serial.print("dt: ");
+  Serial.print(day);
+  Serial.print("/");
+  Serial.print(month);
+  Serial.print("/");
+  Serial.print(year);
+  Serial.print(" - ");
+  Serial.print(hour);
+  Serial.print(":");
+  Serial.print(minute);
+  Serial.print(":");
+  Serial.println(second);
+  delay(2000);
+
+
+    
+
+while (ss.available() > 0){
+    gps.encode(ss.read());
+    if (gps.location.isUpdated()){
+      // Latitude in degrees (double)
+      Serial.print("Latitude= "); 
+      Serial.print(gps.location.lat(), 6);      
+      // Longitude in degrees (double)
+      Serial.print(" Longitude= "); 
+      Serial.println(gps.location.lng(), 6);
+      
+    }
+}
+value = analogRead(voltageSensor);  // Battery volt sensor calculation  
+vOUT = (value *1.1) / 4096.0;
+vIN  = vOUT /(R2 /(R1+R2));
+Serial.print("vt Battery = ");
+Serial.println(vIN);
+    //delay(2000);
+
+    //5A mode, if 20A or 30A mode, need to modify this formula to 
+    //(.19 * analogRead(A0) -25) for 20A mode and 
+    //(.044 * analogRead(A0) -3.78) for 30A mode
+adcValue = analogRead(currentPin);
+adcVoltage = (adcValue / 1024.0) * 1350;
+currentValue = ((adcVoltage - offsetVoltage) / sensitivity);
+  
+Serial.print("Raw Sensor Value =  ");
+Serial.println(adcValue);
+    //delay(2000);
+Serial.print("t Voltage(mV) = ");
+Serial.println(adcVoltage);
+    //delay(2000);
+ Serial.print("t Current = ");
+Serial.println(currentValue);
+    //delay(2000);
+sensors.requestTemperatures(); 
+Celcius=sensors.getTempCByIndex(0);
+Serial.print("Battery TempC = ");
+Serial.println(Celcius);
+
+//sprintf(payload,"Battery Voltage:%.2f Raw Sensor Value:%d  Voltage:%.2f'mV  Current:%.2f Temprature:%.2f'C", vIN, adcValue, adcVoltage, currentValue, Celcius); // Create the payload string for publishing
+sprintf(payload,"{ \"dt\":\"%.d-%.d-%.d,%.d:%.d:%.d\", \"bv\": %.2f, \"rsv\": %d, \"v\" : \"%.2f'mV\", \"bc\" : %.2f, \"bt\" : \"%.2f'C\", \"lat\" : \"%.d'\" ,\"lng\" : \"%.d'\"  }", day, month, year, hour, minute,second,  vIN, adcValue, adcVoltage, currentValue, Celcius, lat, lng); // Create the payload json for publishing
+//Serial.println(payload);
+//time: new Date(event.time),
+if(hornbill.publish(TOPIC_NAME,payload) == 0)   // Publish the message(Temp and humidity)
+{        
+Serial.print("Inwizarads data=>");   
+Serial.println(payload);
+}
+else
+{
+Serial.println("Publish failed");
+}
+delay(15000);
+
+if(msgReceived == 1){
+      
+       msgReceived = 0;
+        Serial.print("");
+        Serial.println(rcvdPayload);
+
+
+
+Serialreadvelue = rcvdPayload;
+
+Serial.println("");
+Serial.println(Serialreadvelue);
+
+
+if (Serialreadvelue == "0") {
+digitalWrite(output26, HIGH);
+digitalWrite(output27, LOW);
+Serial.println("S-26 ON");
+}
+if (Serialreadvelue == "1") {
+digitalWrite(output26, LOW);
+digitalWrite(output27, HIGH);
+Serial.println(" S-27 ON");
+}
+}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 _____________________________
 PUB SUB Test
