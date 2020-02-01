@@ -1,3 +1,540 @@
+____________________
+GPS tested code 010220
+____________________
+
+
+1)
+
+#include <SoftwareSerial.h>
+#include <TinyGPS.h>
+float lat = 0,lon = 0; // create variable for latitude and longitude object
+SoftwareSerial gpsSerial1(2,18);//rx,tx
+TinyGPS gps; // create gps object
+void setup(){
+Serial.begin(115200); // connect serial
+Serial.println("The GPS Received Signal:");
+gpsSerial1.begin(9600); // connect gps sensor
+
+}
+void loop(){
+
+while(gpsSerial1.available()){ // check for gps data
+  if(gps.encode(gpsSerial1.read()))// encode gps data
+  {
+  gps.f_get_position(&lat,&lon); // get latitude and longitude
+  Serial.print("Lat :");
+  Serial.print(lat,6);
+  Serial.print(";");
+  Serial.print("Lon:");
+  Serial.println(lon,6);
+ delay(5000);
+ }
+ 
+}
+ 
+}
+
+2)
+
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+static const int RXPin = 2, TXPin = 18;
+static const uint32_t GPSBaud = 9600;
+
+// The TinyGPS++ object
+TinyGPSPlus gps;
+
+// The serial connection to the GPS device
+SoftwareSerial ss(RXPin, TXPin);
+
+void setup()
+{
+  Serial.begin(115200);
+  ss.begin(GPSBaud);
+
+  
+  Serial.println(F("A simple demonstration of TinyGPS++ with an attached GPS module"));
+  Serial.print(F("Testing TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
+  Serial.println(F("Anil Soni"));
+  Serial.println();
+}
+
+void loop()
+{
+  // This sketch displays information every time a new sentence is correctly encoded.
+  while (ss.available() > 0)
+    if (gps.encode(ss.read()))
+      displayInfo();
+
+  if (millis() > 5000 && gps.charsProcessed() < 10)
+  {
+    Serial.println(F("No GPS detected: check wiring."));
+    while(true);
+  }
+}
+
+void displayInfo()
+{
+  Serial.print(F("Location: ")); 
+  if (gps.location.isValid())
+  {
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(","));
+    Serial.print(gps.location.lng(), 6);
+  }
+  else
+  {
+    Serial.print(F("INVALID"));
+  }
+
+  Serial.println();
+}
+
+
+3)
+
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+static const int RXPin = 2, TXPin = 18;
+static const uint32_t GPSBaud = 9600;
+
+// The TinyGPS++ object
+TinyGPSPlus gps;
+
+// The serial connection to the GPS device
+SoftwareSerial ss(RXPin, TXPin);
+
+void setup()
+{
+  Serial.begin(115200);
+  ss.begin(GPSBaud);
+
+  
+  Serial.println(F("A simple demonstration of TinyGPS++ with an attached GPS module"));
+  Serial.print(F("Testing TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
+  Serial.println(F("Anil Soni"));
+  Serial.println();
+}
+
+void loop()
+{
+  // This sketch displays information every time a new sentence is correctly encoded.
+  while (ss.available() > 0)
+    if (gps.encode(ss.read()))
+      displayInfo();
+
+  if (millis() > 5000 && gps.charsProcessed() < 10)
+  {
+    Serial.println(F("No GPS detected: check wiring."));
+    while(true);
+  }
+}
+
+void displayInfo()
+{
+  Serial.print(F("Location: ")); 
+  if (gps.location.isValid())
+  {
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(","));
+    Serial.print(gps.location.lng(), 6);
+  }
+  else
+  {
+    Serial.print(F("INVALID"));
+  }
+
+  Serial.println();
+}
+
+
+
+4)
+
+
+//#include <TinyGPS++.h>
+//#include <SoftwareSerial.h>
+//
+//static const int RXPin = 19, TXPin = 18;
+//static const uint32_t GPSBaud = 9600;
+//
+//// The TinyGPS++ object
+//TinyGPSPlus gps;
+//
+//// The serial connection to the GPS device
+//SoftwareSerial ss(RXPin, TXPin);
+//
+//void setup(){
+//  Serial.begin(115200);
+//  ss.begin(GPSBaud);
+//}
+//
+//void loop(){
+//  // This sketch displays information every time a new sentence is correctly encoded.
+// 
+//  while (ss.available() > 0){
+//   
+//    gps.encode(ss.read());
+//    
+//    if (gps.location.isUpdated()){
+//      
+//      // Latitude in degrees (double)
+//      Serial.print("Latitude= "); 
+//      Serial.print(gps.location.lat(), 6);      
+//      // Longitude in degrees (double)
+//      Serial.print(" Longitude= "); 
+//      Serial.println(gps.location.lng(), 6); 
+//      delay(200);
+//   
+//      // Speed in kilometers per hour (double)
+//      Serial.print("Speed in km/h = "); 
+//      Serial.println(gps.speed.kmph()); 
+//    }
+//  }
+//}
+
+
+
+
+___________________________________________________
+Final GPS with battery010220
+____________________________________________________
+
+#include <AWS_IOT.h>
+#include <WiFi.h>
+
+WiFiServer server(80);
+#include "time.h"
+
+
+#include <TinyGPS++.h>
+#include <SoftwareSerial.h>
+
+static const int RXPin = 2, TXPin = 18;
+static const uint32_t GPSBaud = 9600;
+
+// The TinyGPS++ object
+TinyGPSPlus gps;
+
+// The serial connection to the GPS device
+SoftwareSerial ss(RXPin, TXPin);
+
+float GPSlat=0;
+float GPSlng=0;
+float GPSspd=0;
+
+
+AWS_IOT hornbill;   // AWS_IOT instance
+char WIFI_SSID[]=" Inc";
+char WIFI_PASSWORD[]="TE19ch00";
+char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
+char CLIENT_ID[]= "707581501534";
+char TOPIC_NAME[]= "$aws/things/Iotbattery/shadow/update/accepted";
+
+int output26 = 26;
+int output27 = 27;
+int status = WL_IDLE_STATUS;
+int tick=0,msgCount=0,msgReceived = 0;
+char payload[512];
+char rcvdPayload[512];
+String Serialreadvelue =" ";// these are the starting values to print
+void mySubCallBackHandler (char *topicName, int payloadLen, char *payLoad)
+{
+    strncpy(rcvdPayload,payLoad,payloadLen);
+    rcvdPayload[payloadLen] = 0;
+    msgReceived = 1;
+  
+}
+
+const char* ntpServer = "de.pool.ntp.org";
+const long  gmtOffset_sec = 19800;
+const int   daylightOffset_sec = 19800;
+int second;
+int minute;
+int hour;
+int day;
+int month;
+int year;
+int weekday;
+long current;
+struct tm timeinfo;
+void printLocalTime()
+{
+if(!getLocalTime(&timeinfo)){
+Serial.println("Failed to obtain time");
+return;
+}
+  //Serial.println(&timeinfo, "%A, %d %B %Y %H:%M:%S");
+}
+
+const int  voltageSensor  = 35;
+float vOUT = 0.0;
+float vIN  = 0.0;
+float  R1  = 100000; // R1 is of used in "ohm" intranal rsistance value
+float R2   = 6800.0;  // used intranal rsistance value
+int value  = 0;
+  
+#include <OneWire.h>
+#include <DallasTemperature.h>
+#define ONE_WIRE_BUS 4 // with the arduino pin number it is connected to
+                          // with the arduino pin number it is connected to
+                          
+const int currentPin = 39;
+int sensitivity = 66;
+int adcValue= 0;
+int offsetVoltage = 2500;
+double adcVoltage = 0;
+double currentValue = 0;
+
+    
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+float Celcius=0;
+float Fahrenheit=0;
+//int status = WL_IDLE_STATUS;
+//int tick=0,msgCount=0,msgReceived = 0;
+//char payload[512];
+//char rcvdPayload[512];
+
+
+
+void setup(){
+
+Serial.begin(115200); // connect serial
+delay(1000);
+
+
+while (status != WL_CONNECTED)
+    {
+        Serial.print("Attempting to connect to SSID: ");
+        Serial.println(WIFI_SSID);
+        // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+        status = WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+        // wait 5 seconds for connection:
+        delay(5000);
+    }
+
+    Serial.println("Connected to wifi");
+
+    if(hornbill.connect(HOST_ADDRESS,CLIENT_ID)== 0)
+    {
+        Serial.println("Connected to AWS");
+        delay(1000);
+
+        if(0==hornbill.subscribe(TOPIC_NAME,mySubCallBackHandler))
+        {
+            Serial.println("Subscribe Successfull");
+        }
+        else
+        {
+            Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
+            while(1);
+        }
+         
+    }
+    else
+    {
+        Serial.println("AWS connection failed, Check the HOST Address");
+        while(1);
+    }
+
+  
+  
+
+
+  Serial.println("WiFi connected.");
+  Serial.println("IP address: "); // Print ESP IP Address
+  Serial.println(WiFi.localIP());
+  Serial.println("MAC address: ");// Print ESP MAC Address 
+  Serial.println(WiFi.macAddress());
+  server.begin(); 
+
+
+  Serial.begin(115200);
+  ss.begin(GPSBaud);
+  Serial.println(F("A simple demonstration of TinyGPS++ with an attached GPS module"));
+  Serial.print(F("Testing TinyGPS++ library v. ")); Serial.println(TinyGPSPlus::libraryVersion());
+  Serial.println(F("Anil Soni"));
+  Serial.println();
+
+  
+
+      configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+      printLocalTime();
+
+
+  pinMode(output26, OUTPUT);
+  pinMode(output27, OUTPUT);
+
+  digitalWrite(output26, LOW);
+  digitalWrite(output27, LOW);
+
+ 
+  
+
+  sensors.begin();
+}
+
+       
+void loop(){
+
+
+printLocalTime();
+  second = timeinfo.tm_sec;
+  minute = timeinfo.tm_min;
+  hour = timeinfo.tm_hour;
+  day = timeinfo.tm_mday;
+  month = timeinfo.tm_mon + 1;
+  year = timeinfo.tm_year + 1900;
+  weekday = timeinfo.tm_wday +1;
+  Serial.print("dt: ");
+  Serial.print(day);
+  Serial.print("/");
+  Serial.print(month);
+  Serial.print("/");
+  Serial.print(year);
+  Serial.print(" - ");
+  Serial.print(hour);
+  Serial.print(":");
+  Serial.print(minute);
+  Serial.print(":");
+  Serial.println(second);
+  delay(5);
+
+
+
+ while (ss.available() > 0)
+    if (gps.encode(ss.read()))
+      displayInfo();
+
+  if (millis() > 5000 && gps.charsProcessed() < 10)
+  {
+    Serial.println(F("No GPS detected: check wiring."));
+    while(true);
+  }
+}
+
+void displayInfo()
+{
+  Serial.print(F("Location: ")); 
+  if (gps.location.isValid())
+  {
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(","));
+    Serial.print(gps.location.lng(), 6);
+    Serial.print("Speed in km/h = "); 
+    Serial.println(gps.speed.kmph()); 
+  }
+  else
+  {
+    Serial.print(F("INVALID"));
+  }
+
+  Serial.println();
+
+    Serial.print(gps.location.lat(), 6);
+    Serial.print(F(","));
+    Serial.print(gps.location.lng(), 6);
+
+    Serial.print("Speed in km/h = "); 
+    Serial.println(gps.speed.kmph()); 
+
+GPSlat  = gps.location.lat();
+GPSlng  = gps.location.lng();
+GPSspd  = gps.speed.kmph();
+
+//Serial.print("LAT: ");
+Serial.println(GPSlat);
+//Serial.print("LNG: ");   
+Serial.println(GPSlng);
+delay(1000);
+
+
+value = analogRead(voltageSensor);  // Battery volt sensor calculation  
+vOUT = (value *1.1) / 4096.0;
+vIN  = vOUT /(R2 /(R1+R2));
+Serial.print("vt Battery = ");
+Serial.println(vIN);
+delay(1000);
+
+
+    //5A mode, if 20A or 30A mode, need to modify this formula to 
+    //(.19 * analogRead(A0) -25) for 20A mode and 
+    //(.044 * analogRead(A0) -3.78) for 30A mode
+adcValue = analogRead(currentPin);
+adcVoltage = (adcValue / 4095.0) * 3980;
+currentValue = ((adcVoltage - offsetVoltage) / sensitivity);
+  
+Serial.print("Raw Sensor Value =  ");
+Serial.println(adcValue);
+    //delay(2000);
+Serial.print("t Voltage(mV) = ");
+Serial.println(adcVoltage);
+    //delay(2000);
+ Serial.print("t Current = ");
+Serial.println(currentValue);
+    //delay(2000);
+sensors.requestTemperatures(); 
+Celcius=sensors.getTempCByIndex(0);
+Serial.print("Battery TempC = ");
+Serial.println(Celcius);
+ delay(1000);
+
+
+
+//sprintf(payload,"Battery Voltage:%.2f Raw Sensor Value:%d  Voltage:%.2f'mV  Current:%.2f Temprature:%.2f'C", vIN, adcValue, adcVoltage, currentValue, Celcius); // Create the payload string for publishing
+sprintf(payload,"{ \"boardid\":\"246F280B81F4\", \"dt\":\"%.d-%.d-%.d,%.d:%.d:%.d\", \"bv\": %.2f, \"rsv\": %d, \"v\" : \"%.2f'mV\", \"bc\" : %.2f, \"bt\" : \"%.2f'C\", \"lat\" : \"%.6f'\" ,\"lon\" : \"%.6f'\" ,\"speed km/h\" : \"%.2f'\"  }", day, month, year, hour, minute,second,  vIN, adcValue, adcVoltage, currentValue, Celcius, GPSlat, GPSlng, GPSspd ); // Create the payload json for publishing
+//Serial.println(payload);
+//time: new Date(event.time),
+if(hornbill.publish(TOPIC_NAME,payload) == 0)   // Publish the message(Temp and humidity)
+{        
+Serial.print("Inwizarads data=>");
+Serial.println(payload);
+}
+else
+{
+Serial.println("Publish failed");
+}
+delay(5000);
+
+
+if(msgReceived == 1){
+      
+       msgReceived = 0;
+        Serial.print("");
+        Serial.println(rcvdPayload);
+
+Serialreadvelue = rcvdPayload;
+
+Serial.println("");
+Serial.println(Serialreadvelue);
+
+
+if (Serialreadvelue == "0") {
+digitalWrite(output26, HIGH);
+digitalWrite(output27, LOW);
+Serial.println("S-26 ON");
+}
+if (Serialreadvelue == "1") {
+digitalWrite(output26, LOW);
+digitalWrite(output27, HIGH);
+Serial.println(" S-27 ON");
+     
+      }
+    }
+} 
+
+
+
+
+
+
+
+
+
 
 _________________________________________________________
 Board ID with IP BAttery 15/01/20
@@ -11,7 +548,7 @@ WiFiServer server(80);
 #include "time.h"
 
 AWS_IOT hornbill;   // AWS_IOT instance
-char WIFI_SSID[]="Inwizards Inc";
+char WIFI_SSID[]="..........";
 char WIFI_PASSWORD[]="TE19ch00";
 char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "707581501534";
@@ -299,7 +836,7 @@ const int echoPin = 34;
 long duration;
 int distance;
 
-char WIFI_SSID[]="Inwizards Inc";
+char WIFI_SSID[]=" Inc";
 char WIFI_PASSWORD[]="TE19ch00";
 char HOST_ADDRESS[]="a2evsoqgilvlbt-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "302806144930";
@@ -478,7 +1015,7 @@ PUB SUB SUB WITH LED FINAL
 #include "time.h"
 
 AWS_IOT hornbill;   // AWS_IOT instance
-char WIFI_SSID[]="Inwizards Inc";
+char WIFI_SSID[]=" Inc";
 char WIFI_PASSWORD[]="TE19ch00";
 char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "707581501534";
@@ -764,7 +1301,7 @@ PUB SUB Test
 
 AWS_IOT hornbill;
 
-char WIFI_SSID[]="Inwizards Inc";
+char WIFI_SSID[]=" Inc";
 char WIFI_PASSWORD[]="TE19ch00";
 char HOST_ADDRESS[]="a2evsoqgilvlbt-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "302806144930";
@@ -895,7 +1432,7 @@ Final parking
 WiFiServer server(80);
 
 AWS_IOT hornbill;
-char WIFI_SSID[]="Sameer";
+char WIFI_SSID[]="................";
 char WIFI_PASSWORD[]="Sameer1234";
 char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "707581501534";
@@ -1299,7 +1836,7 @@ IOT BATTERY
 
 
 AWS_IOT hornbill;   // AWS_IOT instance
-char WIFI_SSID[]="Inwizards Inc";
+char WIFI_SSID[]="I Inc";
 char WIFI_PASSWORD[]="TE19ch00";
 char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "707581501534";
@@ -2184,7 +2721,7 @@ ___________________________________________________________________
 WiFiServer server(80);
 
 AWS_IOT hornbill;
-char WIFI_SSID[]="Inwizards Inc";
+char WIFI_SSID[]="Inc";
 char WIFI_PASSWORD[]="TE19ch00";
 char HOST_ADDRESS[]="a12huzohes0rnz-ats.iot.ap-south-1.amazonaws.com";
 char CLIENT_ID[]= "707581501534";
